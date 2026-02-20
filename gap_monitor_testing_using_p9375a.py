@@ -407,13 +407,13 @@ def create_known_thru_corrections(cal_folder):
 
     port1IdealShort, port1IdealOpen, port1IdealLoad, idealThru = (
         create_ideal_cal_response(
-            freq=freq, calkit=calKitDefinitions["Keysight 85032F"], gender=port1gender
+            freq=freq, calkit=calKitDefinitions["Keysight 85521A"], gender=port1gender
         )
     )
 
     port2IdealShort, port2IdealOpen, port2IdealLoad, idealThru = (
         create_ideal_cal_response(
-            freq=freq, calkit=calKitDefinitions["Keysight 85032F"], gender=port2gender
+            freq=freq, calkit=calKitDefinitions["Keysight 85521A"], gender=port2gender
         )
     )
 
