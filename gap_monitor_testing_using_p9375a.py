@@ -2,10 +2,8 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from time import sleep
 
 import matplotlib.pyplot as plt
-import numpy as np
 import skrf as rf
 from calibration import calKitDefinitions, create_ideal_cal_response
 from IPython.display import display
@@ -72,42 +70,26 @@ def create_vna(resource_address):
 
 
 def configure_vna_for_quick_sweep(vna):
-    vna.emit_beep_on_warnings = False
-    vna.emit_beep_on_completions = False
-
-    vna.ch_1.IFBW = 400
-    vna.ch_1.scan_points = 1601
+    vna.ch_1.IFBW = 100
+    vna.ch_1.scan_points = 261
     vna.ch_1.averaging_count = 2
     vna.ch_1.averaging_enabled = True
-    vna.ch_1.auto_sweep_time_enabled = True
     vna.ch_1.correction_enabled = False
-    vna.ch_1.port_1.output_power = 10
-    # vna.ch_1.port_2.output_power = 0
-    # couple vna port power
-
+    vna.ch_1.power = 10
     vna.ch_1.start_frequency = 20e6
     vna.ch_1.stop_frequency = 250e6
-
     vna.ch_1.trigger_continuous = True
 
 
 def configure_vna_for_testing(vna):
-    vna.emit_beep_on_warnings = False
-    vna.emit_beep_on_completions = False
-
-    vna.ch_1.IFBW = 400
-    vna.ch_1.scan_points = 1601
+    vna.ch_1.IFBW = 100
+    vna.ch_1.scan_points = 261
     vna.ch_1.averaging_count = 8
     vna.ch_1.averaging_enabled = True
-    vna.ch_1.auto_sweep_time_enabled = True
     vna.ch_1.correction_enabled = False
-    vna.ch_1.port_1.output_power = 10
-    # vna.ch_1.port_2.output_power = 0
-    # couple vna port power
-
+    vna.ch_1.output_power = 10
     vna.ch_1.start_frequency = 20e6
     vna.ch_1.stop_frequency = 250e6
-
     vna.ch_1.trigger_continuous = True
 
 
@@ -119,9 +101,8 @@ def save_touchstone(vna, network, cal=None):
         f"Points: {vna.ch_1.scan_points}",
         f"Averaging Count: {vna.ch_1.averaging_count}",
         f"Averaging Enabled: {vna.ch_1.averaging_enabled}",
-        f"Auto Sweep Time Enabled: {vna.ch_1.auto_sweep_time_enabled}",
         f"Correction Enabled: {vna.ch_1.correction_enabled}",
-        f"Port 1 Output Power: {vna.ch_1.port_1.output_power}",
+        f"Port 1 Output Power: {vna.ch_1.power}",
         # f"Port 2 Output Power: {vna.ch_1.port_2.output_power}",
         f"Start Frequency: {vna.ch_1.start_frequency}",
         f"Stop Frequency: {vna.ch_1.stop_frequency}",
@@ -158,46 +139,26 @@ def perform_vna_sweep(vna, ports, name="", cal=None):
     assert ports in ["Port 1", "Port 2", "Both"]
 
     if ports == "Both":
-        n = 2
+        n = "1,2"
+        m = "2"
     else:
-        n = 1
+        n = ports[-1]
+        m = "1"
 
-    sleep(0.5)
-    # create s parm array to store s parm measurements
-    frequencies = vna.ch_1.sweep_frequencies
+    network = rf.Network(
+        vna.ch_1.save_snp_touchstone(
+            remote_path=rf"C:\Users\Public\Documents\{timestamp()}_uncorrected_{name}.s{m}p",
+            ports=n,
+            channel=1,
+            meas=1,
+            snp_format="RI",  # "RI", "MA", "DB", or "AUTO"
+            single_sweep=True,
+            fetch_to=rf"./uncorrected_measurements/{timestamp()}_uncorrected_{name}.s{m}p",
+            timeout_ms=120_000,
+        )
+    )
 
-    vna.ch_1.tr_1.make_active()
-    S11 = vna.ch_1.measurement_data
-
-    assert len(S11) == len(frequencies)
-
-    freq = rf.Frequency.from_f(np.array(frequencies), unit="Hz")
-    s = np.zeros((len(frequencies), n, n), dtype=complex)
-    s[:, 0, 0] = np.array(S11)
-
-    if ports == "Both":
-        vna.ch_1.tr_2.make_active()
-        S21 = vna.ch_1.measurement_data
-
-        vna.ch_1.tr_3.make_active()
-        S12 = vna.ch_1.measurement_data
-
-        vna.ch_1.tr_4.make_active()
-        S22 = vna.ch_1.measurement_data
-
-        # verify len of other three measurements are equal and match s11
-        len(S21) == len(S12) == len(S22) == len(frequencies)
-
-        # finish array plumbing
-        s[:, 0, 1] = np.array(S12)
-        s[:, 1, 0] = np.array(S21)
-        s[:, 1, 1] = np.array(S22)
-
-    # create network object in Scikit-RF
-    network = rf.Network(frequency=freq, s=s, name=name)
-
-    # simple beep to alert completion on measurement
-    vna.emit_beep()
+    network.name = name
 
     return save_touchstone(vna, network, cal=cal)
 
@@ -291,7 +252,7 @@ def create_one_port_corrections(cal_folder):
 
     port1IdealShort, port1IdealOpen, port1IdealLoad, idealThru = (
         create_ideal_cal_response(
-            freq=freq, calkit=calKitDefinitions["Keysight 85032F"], gender=port1gender
+            freq=freq, calkit=calKitDefinitions["Keysight 85520A"], gender=port1gender
         )
     )
 
@@ -407,13 +368,13 @@ def create_known_thru_corrections(cal_folder):
 
     port1IdealShort, port1IdealOpen, port1IdealLoad, idealThru = (
         create_ideal_cal_response(
-            freq=freq, calkit=calKitDefinitions["Keysight 85521A"], gender=port1gender
+            freq=freq, calkit=calKitDefinitions["Keysight 85520A"], gender=port1gender
         )
     )
 
     port2IdealShort, port2IdealOpen, port2IdealLoad, idealThru = (
         create_ideal_cal_response(
-            freq=freq, calkit=calKitDefinitions["Keysight 85521A"], gender=port2gender
+            freq=freq, calkit=calKitDefinitions["Keysight 85520A"], gender=port2gender
         )
     )
 
@@ -636,7 +597,7 @@ def create_dut_measurement_menu(vna, cal):
                     prior_network=golden_network,
                 )
         with plot_output_3:
-            freq = rf.Frequency(20, 250, 1601, "MHz")
+            freq = dut_network.frequency
             perfect_gap_network = create_perfect_delay_attenuator(freq)
             plot_comparison_to_prior_unit(
                 title=f"{name} vs Perfect Gap Monitor",

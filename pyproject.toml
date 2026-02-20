@@ -5,5 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "ipykernel>=7.2.0",
+    "ipywidgets>=8.1.8",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.2",
+    "pymeasure>=0.15.0",
+    "pyvisa>=1.16.1",
+    "pyvisa-py>=0.8.1",
     "ruff>=0.15.2",
+    "scikit-rf>=1.10.0",
 ]
