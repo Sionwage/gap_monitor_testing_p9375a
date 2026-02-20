@@ -26,21 +26,6 @@ from keysight_p9375a import KeysightP9375A
 from pyvisa import ResourceManager
 from skrf import SOLT, two_port_reflect
 
-"""
-Todo List
-
-DONE All caps for constant "FOLDERS"
-TODO Import calibration script
-TODO Import P9375A vna script
-TODO remove E5071C vna initialization code in "create_vna"
-TODO insert P9375A vna initialization code in "create_vna"
-TODO Add Verification Measurements post calibration
-TODO Create jupyter notebook to pair w/ this
-
-
-
-"""
-
 
 FOLDERS = [
     "calibration_measurements",
@@ -673,7 +658,7 @@ def create_dut_measurement_menu(vna, cal):
 # ipywidget menu to select two sweeps and plot comparison
 
 
-def initialize(device, address=17):
+def initialize(device_address):
     # check datafolder structure or create if needed
     create_folders()
 
@@ -683,7 +668,7 @@ def initialize(device, address=17):
     # resources = list_resources()
 
     # initialize the vna to use in the lines below
-    vna = create_vna(resource_address=device, gpib_address=address)
+    vna = create_vna(resource_address=device_address)
 
     # initial configuration
     # configure_vna_for_testing(vna)
