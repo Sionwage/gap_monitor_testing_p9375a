@@ -7,12 +7,12 @@ from time import sleep
 import matplotlib.pyplot as plt
 import numpy as np
 import skrf as rf
-from calibration import *
+from calibration import calKitDefinitions, create_ideal_cal_response
+from IPython.display import display
 from ipywidgets.widgets import (
     Button,
     Checkbox,
     Dropdown,
-    FloatProgress,
     GridspecLayout,
     HBox,
     Label,
@@ -26,7 +26,6 @@ from pymeasure.adapters import PrologixAdapter
 from pymeasure.instruments.keysight import KeysightE5071C
 from pyvisa import ResourceManager
 from skrf import SOLT, two_port_reflect
-from skrf.media import DefinedGammaZ0
 
 """
 Todo List
@@ -165,7 +164,7 @@ def save_touchstone(vna, network, cal=None):
         for comment in network.comments:
             file.write(f"# {comment}")
 
-    if cal != None:
+    if cal is not None:
         cal_network = cal.apply_cal(network)
         filename = filename.replace("uncorrected", "corrected")
         cal_network.write_touchstone(filename=filename)
@@ -271,7 +270,6 @@ def create_vna_calibration_measurement_menu(vna):
     calibration_perform_measurement_button.on_click(perform_calibration_measurement)
 
 
-
 def create_one_port_corrections(cal_folder):
     cal_folder = Path(cal_folder)
     cal_files = os.listdir(cal_folder)
@@ -281,6 +279,8 @@ def create_one_port_corrections(cal_folder):
     assert len(list_files_matching_str("short", cal_files)) == 1
     assert len(list_files_matching_str("open", cal_files)) == 1
     assert len(list_files_matching_str("load", cal_files)) == 1
+
+    port1files = list_files_matching_str("Port 1", cal_files)
 
     port1gender = None
 
@@ -512,14 +512,16 @@ def plot_comparison_to_prior_unit(
     diff_name=None,
     # plot_folder='plots',
 ):
-    assert type(network) == type(prior_network) == rf.Network
+    assert isinstance(network, rf.Network)
 
     if isinstance(prior_network, type(None)):
-        files = listdir(corr_measurement_folder)
-        prior_network = rf.Network(corr_measurement_folder / files[-2])
+        files = os.listdir("./corrected_measurements/")
+        prior_network = rf.Network("./corrected_measurements/" / files[-2])
 
     if isinstance(diff_name, type(None)):
         diff_name = f"{network_name}-{prior_name}"
+
+    assert isinstance(prior_network, rf.Network)
 
     plt.figure()
 
@@ -716,6 +718,8 @@ create_folders(FOLDERS)
 header_style = dict(
     font_size="18pt",
 )
+
+# calibration widgets
 
 calibration_measurement_label = Label("Calibration Measurements", style=header_style)
 
