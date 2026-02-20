@@ -22,8 +22,7 @@ from ipywidgets.widgets import (
     Text,
     VBox,
 )
-from pymeasure.adapters import PrologixAdapter
-from pymeasure.instruments.keysight import KeysightE5071C
+from keysight_p9375a import KeysightP9375A
 from pyvisa import ResourceManager
 from skrf import SOLT, two_port_reflect
 
@@ -82,21 +81,8 @@ def create_folders(folders=FOLDERS):
         Path(folder).mkdir(parents=True, exist_ok=True)
 
 
-def create_vna(resource_address, gpib_address):
-    prologix = PrologixAdapter(
-        resource_name=resource_address,
-        visa_library="@py",
-        auto=1,
-        eos="\n",
-        # eoi=True,
-        address=int(gpib_address),
-    )
-    prologix.write("++eot_enable 0")
-
-    vna = KeysightE5071C(adapter=prologix)
-    vna.restore_preset = True
-    vna.adapter.gpib_timeout = 1500
-    vna.adapter.connection.timeout = 1500
+def create_vna(resource_address):
+    vna = KeysightP9375A(resource_address)
     return vna
 
 
