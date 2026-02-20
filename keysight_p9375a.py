@@ -241,8 +241,10 @@ class KeysightP9375A_Channels(Channel):
         if single_sweep:
             # Run one sweep and wait for completion
             self.write("INIT:CONT OFF")
-            self.write("INIT:IMM")
-            self.ask("*OPC?")  # blocks until the sweep is complete
+
+            for i in range(0, self.averaging_count):
+                self.write("INIT:IMM")
+                self.ask("*OPC?")  # blocks until the sweep is complete
 
         # Save Touchstone file on the VNA controller PC filesystem
         # SCPI: CALCulate<cnum>:MEASure<mnum>:DATA:SNP:PORTs:SAVE "<ports>","<filename>"
