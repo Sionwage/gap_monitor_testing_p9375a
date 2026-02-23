@@ -2,6 +2,8 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+import time
+import winsound
 
 import matplotlib.pyplot as plt
 import skrf as rf
@@ -69,27 +71,39 @@ def create_vna(resource_address):
     return vna
 
 
-def configure_vna_for_quick_sweep(vna):
-    vna.ch_1.IFBW = 100
-    vna.ch_1.scan_points = 261
-    vna.ch_1.averaging_count = 2
+def configure_vna_for_calibration(vna):
+    vna.ch_1.IFBW = 1000
+    vna.ch_1.scan_points = 101
+    vna.ch_1.averaging_count = 64
     vna.ch_1.averaging_enabled = True
     vna.ch_1.correction_enabled = False
-    vna.ch_1.power = 10
+    vna.ch_1.power = 0
     vna.ch_1.start_frequency = 20e6
-    vna.ch_1.stop_frequency = 250e6
+    vna.ch_1.stop_frequency = 120e6
+    vna.ch_1.trigger_continuous = True
+
+
+def configure_vna_for_quick_sweep(vna):
+    vna.ch_1.IFBW = 100
+    vna.ch_1.scan_points = 101
+    vna.ch_1.averaging_count = 16
+    vna.ch_1.averaging_enabled = True
+    vna.ch_1.correction_enabled = False
+    vna.ch_1.power = 0
+    vna.ch_1.start_frequency = 20e6
+    vna.ch_1.stop_frequency = 120e6
     vna.ch_1.trigger_continuous = True
 
 
 def configure_vna_for_testing(vna):
-    vna.ch_1.IFBW = 100
-    vna.ch_1.scan_points = 261
-    vna.ch_1.averaging_count = 8
+    vna.ch_1.IFBW = 1000
+    vna.ch_1.scan_points = 101
+    vna.ch_1.averaging_count = 64
     vna.ch_1.averaging_enabled = True
     vna.ch_1.correction_enabled = False
-    vna.ch_1.output_power = 10
+    vna.ch_1.power = 0
     vna.ch_1.start_frequency = 20e6
-    vna.ch_1.stop_frequency = 250e6
+    vna.ch_1.stop_frequency = 120e6
     vna.ch_1.trigger_continuous = True
 
 
@@ -145,6 +159,10 @@ def perform_vna_sweep(vna, ports, name="", cal=None):
         n = ports[-1]
         m = "1"
 
+    vna.ch_1.power = 20
+
+    time.sleep(0.5)
+
     network = rf.Network(
         vna.ch_1.save_snp_touchstone(
             remote_path=rf"C:\Users\Public\Documents\{timestamp()}_uncorrected_{name}.s{m}p",
@@ -159,6 +177,10 @@ def perform_vna_sweep(vna, ports, name="", cal=None):
     )
 
     network.name = name
+
+    vna.ch_1.power = 0
+
+    winsound.Beep(440, 500)
 
     return save_touchstone(vna, network, cal=cal)
 
